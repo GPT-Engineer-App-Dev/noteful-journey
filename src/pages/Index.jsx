@@ -25,8 +25,12 @@ const Index = () => {
 
   useEffect(() => {
     const storedNotes = localStorage.getItem('notes');
+    const storedIsLoggedIn = localStorage.getItem('isLoggedIn');
     if (storedNotes) {
       setNotes(JSON.parse(storedNotes));
+    }
+    if (storedIsLoggedIn) {
+      setIsLoggedIn(JSON.parse(storedIsLoggedIn));
     }
   }, []);
 
@@ -34,10 +38,15 @@ const Index = () => {
     localStorage.setItem('notes', JSON.stringify(notes));
   }, [notes]);
 
+  useEffect(() => {
+    localStorage.setItem('isLoggedIn', JSON.stringify(isLoggedIn));
+  }, [isLoggedIn]);
+
   const handleLogin = () => {
     if (username === 'user' && password === 'pass') {
       setIsLoggedIn(true);
       setError('');
+      localStorage.setItem('isLoggedIn', 'true');
     } else {
       setError('Invalid credentials');
     }
@@ -47,16 +56,18 @@ const Index = () => {
     setIsLoggedIn(false);
     setUsername('');
     setPassword('');
+    localStorage.setItem('isLoggedIn', 'false');
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    let updatedNotes;
     if (currentNote) {
-      setNotes(notes.map(note => 
+      updatedNotes = notes.map(note => 
         note.id === currentNote.id 
           ? {...note, title, content, color, tags: tags.split(',').map(tag => tag.trim())} 
           : note
-      ));
+      );
     } else {
       const newNote = {
         id: Date.now(),
@@ -68,8 +79,10 @@ const Index = () => {
         createdAt: new Date().toISOString().split('T')[0],
         position: { x: 0, y: 0 }
       };
-      setNotes([...notes, newNote]);
+      updatedNotes = [...notes, newNote];
     }
+    setNotes(updatedNotes);
+    localStorage.setItem('notes', JSON.stringify(updatedNotes));
     resetForm();
   };
 
@@ -90,16 +103,20 @@ const Index = () => {
   };
 
   const deleteNote = (id) => {
-    setNotes(notes.filter(note => note.id !== id));
+    const updatedNotes = notes.filter(note => note.id !== id);
+    setNotes(updatedNotes);
+    localStorage.setItem('notes', JSON.stringify(updatedNotes));
   };
 
   const addComment = (noteId) => {
     if (comment.trim()) {
-      setNotes(notes.map(note => 
+      const updatedNotes = notes.map(note => 
         note.id === noteId 
           ? {...note, comments: [...note.comments, comment]} 
           : note
-      ));
+      );
+      setNotes(updatedNotes);
+      localStorage.setItem('notes', JSON.stringify(updatedNotes));
       setComment('');
     }
   };
@@ -131,9 +148,11 @@ const Index = () => {
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
       
-      setNotes(notes.map(note =>
+      const updatedNotes = notes.map(note =>
         note.id === draggedNote.id ? { ...note, position: { x, y } } : note
-      ));
+      );
+      setNotes(updatedNotes);
+      localStorage.setItem('notes', JSON.stringify(updatedNotes));
       setDraggedNote(null);
     }
   };
