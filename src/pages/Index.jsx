@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Edit, Trash, LogIn, LogOut } from 'lucide-react';
+import { Plus, Edit, Trash, LogIn, LogOut, Camera } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -285,6 +285,20 @@ const Index = () => {
             </Card>
           </div>
         ))}
+      </div>
+
+      {/* Placeholder image example */}
+      <div className="mt-8">
+        <h2 className="text-xl font-bold mb-4">Placeholder Image Example</h2>
+        <div className="bg-gray-200 p-4 rounded-lg">
+          <img src="/placeholder.svg" alt="placeholder" className="mx-auto object-cover w-full h-[400px]" />
+        </div>
+      </div>
+
+      {/* Example of using Lucide icon */}
+      <div className="mt-8">
+        <h2 className="text-xl font-bold mb-4">Lucide Icon Example</h2>
+        <Camera color="red" size={48} />
       </div>
     </div>
   );
