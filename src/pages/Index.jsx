@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Edit, Trash, LogIn, LogOut } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import Draggable from 'react-draggable';
 
 const Index = () => {
   const [notes, setNotes] = useState([]);
@@ -21,6 +20,8 @@ const Index = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [draggedNote, setDraggedNote] = useState(null);
+  const canvasRef = useRef(null);
 
   useEffect(() => {
     const storedNotes = localStorage.getItem('notes');
@@ -111,10 +112,30 @@ const Index = () => {
     return Object.keys(counts).map(date => ({ date, count: counts[date] }));
   };
 
-  const handleDrag = (id, e, data) => {
-    setNotes(notes.map(note =>
-      note.id === id ? { ...note, position: { x: data.x, y: data.y } } : note
-    ));
+  const handleDragStart = (e, note) => {
+    setDraggedNote(note);
+    e.dataTransfer.setData('text/plain', note.id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    if (draggedNote) {
+      const canvas = canvasRef.current;
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      setNotes(notes.map(note =>
+        note.id === draggedNote.id ? { ...note, position: { x, y } } : note
+      ));
+      setDraggedNote(null);
+    }
   };
 
   if (!isLoggedIn) {
@@ -208,52 +229,61 @@ const Index = () => {
         </Card>
       </div>
 
-      <div className="mt-8 relative" style={{ height: '600px', overflow: 'hidden' }}>
+      <div 
+        ref={canvasRef}
+        className="mt-8 relative" 
+        style={{ height: '600px', overflow: 'hidden' }}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+      >
         {notes.map(note => (
-          <Draggable
+          <div
             key={note.id}
-            defaultPosition={note.position}
-            onStop={(e, data) => handleDrag(note.id, e, data)}
-            bounds="parent"
+            className="absolute"
+            style={{
+              left: `${note.position.x}px`,
+              top: `${note.position.y}px`,
+              cursor: 'move'
+            }}
+            draggable
+            onDragStart={(e) => handleDragStart(e, note)}
           >
-            <div className="absolute">
-              <Card style={{backgroundColor: note.color, width: '300px'}}>
-                <CardHeader>{note.title}</CardHeader>
-                <CardContent>
-                  <p>{note.content}</p>
-                  <div className="mt-2">
-                    {note.tags.map(tag => (
-                      <Badge key={tag} variant="secondary" className="mr-1">{tag}</Badge>
-                    ))}
+            <Card style={{backgroundColor: note.color, width: '300px'}}>
+              <CardHeader>{note.title}</CardHeader>
+              <CardContent>
+                <p>{note.content}</p>
+                <div className="mt-2">
+                  {note.tags.map(tag => (
+                    <Badge key={tag} variant="secondary" className="mr-1">{tag}</Badge>
+                  ))}
+                </div>
+                <div className="mt-4">
+                  <h4 className="font-semibold">Comments:</h4>
+                  {note.comments.map((comment, index) => (
+                    <p key={index} className="text-sm">{comment}</p>
+                  ))}
+                  <div className="mt-2 flex">
+                    <Input
+                      type="text"
+                      placeholder="Add a comment"
+                      value={comment}
+                      onChange={(e) => setComment(e.target.value)}
+                      className="mr-2"
+                    />
+                    <Button onClick={() => addComment(note.id)}>Add</Button>
                   </div>
-                  <div className="mt-4">
-                    <h4 className="font-semibold">Comments:</h4>
-                    {note.comments.map((comment, index) => (
-                      <p key={index} className="text-sm">{comment}</p>
-                    ))}
-                    <div className="mt-2 flex">
-                      <Input
-                        type="text"
-                        placeholder="Add a comment"
-                        value={comment}
-                        onChange={(e) => setComment(e.target.value)}
-                        className="mr-2"
-                      />
-                      <Button onClick={() => addComment(note.id)}>Add</Button>
-                    </div>
-                  </div>
-                  <div className="mt-4 flex justify-end space-x-2">
-                    <Button onClick={() => editNote(note)} variant="outline">
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button onClick={() => deleteNote(note.id)} variant="destructive">
-                      <Trash className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </Draggable>
+                </div>
+                <div className="mt-4 flex justify-end space-x-2">
+                  <Button onClick={() => editNote(note)} variant="outline">
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button onClick={() => deleteNote(note.id)} variant="destructive">
+                    <Trash className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         ))}
       </div>
     </div>
